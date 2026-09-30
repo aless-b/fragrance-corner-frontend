@@ -2,7 +2,7 @@ import React from 'react';
 import { usePerfume } from '../context/PerfumeContext';
 import { Star, Trash2, Droplet, Sparkles, Tag } from 'lucide-react';
 
-export const ProductCard = ({ perfume }) => {
+export const ProductCard = ({ perfume, onDelete }) => {
   const { deletePerfume } = usePerfume();
 
   const categoryColors = {
@@ -11,6 +11,14 @@ export const ProductCard = ({ perfume }) => {
     Floral: 'bg-[#FDF0E6] text-[#85544D] border-[#F1C7A7]',
     Fresh: 'bg-[#F0F4F1] text-[#4A6B5B] border-[#B1B6B2]',
     Gourmand: 'bg-[#F5EBE6] text-[#85544D] border-[#F1C7A7]'
+  };
+
+  const handleRemove = () => {
+    if (onDelete) {
+      onDelete();
+    } else {
+      deletePerfume(perfume.id);
+    }
   };
 
   return (
@@ -40,7 +48,7 @@ export const ProductCard = ({ perfume }) => {
 
         {/* Delete Button */}
         <button
-          onClick={() => deletePerfume(perfume.id)}
+          onClick={handleRemove}
           title="Eliminar perfume"
           className="absolute bottom-3 right-3 p-2 rounded-xl bg-white/90 hover:bg-rose-600 text-[#85544D] hover:text-white border border-[#E8DFD8] hover:border-rose-600 backdrop-blur-md transition-all cursor-pointer shadow-sm opacity-0 group-hover:opacity-100"
         >
@@ -74,7 +82,7 @@ export const ProductCard = ({ perfume }) => {
           </p>
         </div>
 
-        {/* Card Footer Price - ONLY "Precio" */}
+        {/* Card Footer Price */}
         <div className="flex items-center justify-between pt-3 border-t border-[#E8DFD8]">
           <div>
             <span className="text-[11px] uppercase tracking-wider text-[#85544D]/70 font-semibold block">Precio</span>

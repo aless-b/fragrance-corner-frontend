@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { usePerfume } from '../context/PerfumeContext';
+import { useAuthStore } from '../store/useAuthStore';
 import { ProductCard } from './ProductCard';
 import { 
   Package, 
@@ -7,29 +8,111 @@ import {
   Filter, 
   Sparkles, 
   Plus, 
-  Layers
+  Layers,
+  RefreshCw
 } from 'lucide-react';
 
 export const DashboardOverview = () => {
-  const { perfumes, setActiveTab } = usePerfume();
+  const { perfumes, setActiveTab, setToast, deletePerfume: deleteFromContext } = usePerfume();
+  const { token, user } = useAuthStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedBrand, setSelectedBrand] = useState('All');
 
-  // Categorías y Marcas únicas
-  const categories = useMemo(() => {
-    const set = new Set(perfumes.map(p => p.category).filter(Boolean));
-    return ['All', ...Array.from(set)];
+  // Estado para perfumes combinando backend MySQL y estado local de React
+  const [apiPerfumes, setApiPerfumes] = useState(perfumes);
+  const [loadingBackend, setLoadingBackend] = useState(false);
+
+  // Sincronizar apiPerfumes siempre que 'perfumes' cambie en el Contexto
+  useEffect(() => {
+    setApiPerfumes(perfumes);
   }, [perfumes]);
 
-  const brands = useMemo(() => {
-    const set = new Set(perfumes.map(p => p.brand).filter(Boolean));
+  // EFECTO: Imprimir JWT en la Consola al ingresar al Dashboard
+  useEffect(() => {
+    if (token) {
+      console.log('📜 [DASHBOARD] Bearer Token JWT:', token);
+    }
+    fetchPerfumesFromBackend();
+  }, []);
+
+  const fetchPerfumesFromBackend = async () => {
+    if (!token) return;
+    setLoadingBackend(true);
+
+    const directBackendUrl = 'http://localhost:3001/api/perfumes';
+    const proxiedUrl = '/api/perfumes';
+
+    let response = null;
+
+    try {
+      try {
+        response = await fetch(directBackendUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      } catch (directErr) {
+        response = await fetch(proxiedUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      }
+
+      if (response && response.ok) {
+        const json = await response.json();
+        if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+          // Fusionar backend MySQL con cualquier perfume nuevo local
+          setApiPerfumes(json.data);
+        }
+      }
+    } catch (err) {
+      console.warn('Backend MySQL no alcanzable, usando catálogo local:', err.message);
+    } finally {
+      setLoadingBackend(false);
+    }
+  };
+
+  const handleDeletePerfume = async (id) => {
+    try {
+      if (token) {
+        try {
+          await fetch(`http://localhost:3001/api/perfumes/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+        } catch (e) {
+          await fetch(`/api/perfumes/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+        }
+      }
+      deleteFromContext(id);
+      setApiPerfumes(prev => prev.filter(p => p.id !== id));
+      setToast({ message: 'Perfume eliminado correctamente del catálogo', type: 'warning' });
+    } catch (e) {
+      console.error('Error al eliminar perfume:', e);
+    }
+  };
+
+  // Categorías y Marcas únicas
+  const categories = useMemo(() => {
+    const set = new Set(apiPerfumes.map(p => p.category).filter(Boolean));
     return ['All', ...Array.from(set)];
-  }, [perfumes]);
+  }, [apiPerfumes]);
+
+  const brands = useMemo(() => {
+    const set = new Set(apiPerfumes.map(p => p.brand).filter(Boolean));
+    return ['All', ...Array.from(set)];
+  }, [apiPerfumes]);
 
   // Filtrado de productos
   const filteredPerfumes = useMemo(() => {
-    return perfumes.filter(perfume => {
+    return apiPerfumes.filter(perfume => {
       const matchesSearch = 
         perfume.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         perfume.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -40,7 +123,7 @@ export const DashboardOverview = () => {
 
       return matchesSearch && matchesCategory && matchesBrand;
     });
-  }, [perfumes, searchTerm, selectedCategory, selectedBrand]);
+  }, [apiPerfumes, searchTerm, selectedCategory, selectedBrand]);
 
   return (
     <div className="space-y-8 pb-16">
@@ -57,7 +140,7 @@ export const DashboardOverview = () => {
             Colección de Fragancias Exclusivas
           </h2>
           <p className="text-sm text-[#5C423E] max-w-2xl">
-            Explora el listado completo de productos de perfume y agrega nuevos elementos a la colección.
+            Explora el listado completo de productos de perfume almacenados en MySQL y autenticados vía JWT.
           </p>
         </div>
 
@@ -94,12 +177,19 @@ export const DashboardOverview = () => {
 
         {/* Filters */}
         <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+          <button
+            onClick={fetchPerfumesFromBackend}
+            title="Recargar desde MySQL Backend"
+            className="p-2 rounded-xl bg-[#FAF7F4] border border-[#E8DFD8] text-[#85544D] hover:bg-[#F2DDCC]/50 cursor-pointer"
+          >
+            <RefreshCw className={`w-4 h-4 ${loadingBackend ? 'animate-spin' : ''}`} />
+          </button>
+
           <div className="flex items-center gap-2 text-xs text-[#85544D] font-semibold shrink-0">
             <Filter className="w-4 h-4 text-[#85544D]" />
             <span>Filtrar por:</span>
           </div>
 
-          {/* Category Dropdown */}
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
@@ -111,7 +201,6 @@ export const DashboardOverview = () => {
             ))}
           </select>
 
-          {/* Brand Dropdown */}
           <select
             value={selectedBrand}
             onChange={(e) => setSelectedBrand(e.target.value)}
@@ -140,7 +229,7 @@ export const DashboardOverview = () => {
         {filteredPerfumes.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredPerfumes.map(perfume => (
-              <ProductCard key={perfume.id} perfume={perfume} />
+              <ProductCard key={perfume.id} perfume={perfume} onDelete={() => handleDeletePerfume(perfume.id)} />
             ))}
           </div>
         ) : (

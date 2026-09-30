@@ -3,35 +3,26 @@ import { jwtDecode } from 'jwt-decode';
 
 const TOKEN_KEY = 'fragrance_corner_jwt_token';
 
-// Función para decodificar JWT de forma segura
-const parseJwt = (token) => {
+// Función para decodificar y loguear JWT en consola
+const parseAndLogJwt = (token, context = 'Login Exitoso') => {
   try {
-    return jwtDecode(token);
+    const decoded = jwtDecode(token);
+    console.log(`🔑 [JWT STORE] Token JWT (${context}):`, token);
+    return decoded;
   } catch (e) {
     console.error('Error al decodificar JWT:', e);
     return null;
   }
 };
 
-// Carga inicial del token almacenado
-const savedToken = localStorage.getItem(TOKEN_KEY);
-const initialUser = savedToken ? parseJwt(savedToken) : null;
-
 export const useAuthStore = create((set, get) => ({
-  token: savedToken || null,
-  user: initialUser ? {
-    name: initialUser.name || initialUser.preferred_username || 'Usuario LDAP',
-    username: initialUser.preferred_username || initialUser.sub || 'alice',
-    email: initialUser.email || `${initialUser.preferred_username || 'user'}@example.com`,
-    role: 'Usuario Autenticado (LDAP)',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-    rawPayload: initialUser
-  } : null,
-  isAuthenticated: !!(savedToken && initialUser),
+  token: null,
+  user: null,
+  isAuthenticated: false, // Siempre requiere iniciar sesión al ingresar a http://localhost:5173
   isLoading: false,
   error: null,
 
-  // Acción de inicio de sesión: consume Keycloak LDAP Token API
+  // Acción de inicio de sesión
   login: async (username, password) => {
     set({ isLoading: true, error: null });
 
@@ -48,22 +39,17 @@ export const useAuthStore = create((set, get) => ({
     let response = null;
 
     try {
-      // Intentar primero URL directa de Keycloak
       try {
         response = await fetch(directUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: params.toString()
         });
       } catch (errDirect) {
         console.warn('Fallo en URL directa, probando endpoint proxied:', errDirect);
         response = await fetch(proxiedUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: params.toString()
         });
       }
@@ -80,8 +66,8 @@ export const useAuthStore = create((set, get) => ({
         throw new Error('El servidor Keycloak no retornó un access_token JWT válido.');
       }
 
-      // Decodificación e inyección del JWT en Zustand
-      const decodedUser = parseJwt(jwtToken);
+      // Loguear e inyectar el JWT en Zustand
+      const decodedUser = parseAndLogJwt(jwtToken, 'Login LDAP / Keycloak Exitoso');
       const userProfile = {
         name: decodedUser?.name || decodedUser?.preferred_username || username,
         username: decodedUser?.preferred_username || username,
@@ -91,7 +77,6 @@ export const useAuthStore = create((set, get) => ({
         rawPayload: decodedUser
       };
 
-      // Guardar token en localStorage
       localStorage.setItem(TOKEN_KEY, jwtToken);
 
       set({
@@ -105,19 +90,13 @@ export const useAuthStore = create((set, get) => ({
       return { success: true, token: jwtToken };
     } catch (err) {
       console.error('Error en conexión LDAP / Keycloak:', err.message);
-
-      set({
-        isLoading: false,
-        error: err.message
-      });
-
+      set({ isLoading: false, error: err.message });
       return { success: false, error: err.message };
     }
   },
 
-  // Inyección manual de token JWT
   setJwtToken: (jwtToken) => {
-    const decodedUser = parseJwt(jwtToken);
+    const decodedUser = parseAndLogJwt(jwtToken, 'Inyección Manual JWT');
     if (!decodedUser) {
       set({ error: 'Token JWT inválido.' });
       return false;
@@ -143,7 +122,6 @@ export const useAuthStore = create((set, get) => ({
     return true;
   },
 
-  // Cierre de sesión y desinyección del JWT
   logout: () => {
     localStorage.removeItem(TOKEN_KEY);
     set({

@@ -34,13 +34,21 @@ export const PerfumeProvider = ({ children }) => {
 
   // Sincronizar catálogo con localStorage
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(perfumes));
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(perfumes));
+    } catch (e) {
+      console.warn("No se pudo guardar en localStorage (exceso de cuota):", e.message);
+    }
   }, [perfumes]);
 
   // Sincronizar usuario con localStorage
   useEffect(() => {
     if (user) {
-      localStorage.setItem(AUTH_KEY, JSON.stringify(user));
+      try {
+        localStorage.setItem(AUTH_KEY, JSON.stringify(user));
+      } catch (e) {
+        console.warn("Error al guardar usuario en localStorage:", e.message);
+      }
     } else {
       localStorage.removeItem(AUTH_KEY);
     }
@@ -73,16 +81,16 @@ export const PerfumeProvider = ({ children }) => {
 
   const addPerfume = (newProductData) => {
     const newPerfume = {
-      id: `perfume-${Date.now()}`,
+      id: newProductData.id || `perfume-${Date.now()}`,
       ...newProductData,
       price: parseFloat(newProductData.price) || 0,
       stock: parseInt(newProductData.stock, 10) || 0,
       volume: parseInt(newProductData.volume, 10) || 50,
-      rating: newProductData.rating ? parseFloat(newProductData.rating) : 5.0,
-      createdAt: new Date().toISOString()
+      rating: newProductData.rating ? parseFloat(newProductData.rating) : 4.8,
+      createdAt: newProductData.createdAt || new Date().toISOString()
     };
 
-    setPerfumes(prev => [newPerfume, ...prev]);
+    setPerfumes(prev => [newPerfume, ...prev.filter(p => p.id !== newPerfume.id)]);
     showToast(`"${newPerfume.name}" ha sido agregado a Fragrance Corner.`);
     setActiveTab('dashboard');
   };

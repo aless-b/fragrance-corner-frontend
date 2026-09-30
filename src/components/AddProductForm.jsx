@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePerfume } from '../context/PerfumeContext';
+import { useAuthStore } from '../store/useAuthStore';
 import { 
   PlusCircle, 
   ArrowLeft, 
@@ -22,6 +23,7 @@ const PRESET_IMAGES = [
 
 export const AddProductForm = () => {
   const { addPerfume, setActiveTab } = usePerfume();
+  const { token, user } = useAuthStore();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -35,21 +37,55 @@ export const AddProductForm = () => {
   });
 
   const [imagePreview, setImagePreview] = useState(PRESET_IMAGES[0].url);
+  const [submitting, setSubmitting] = useState(false);
+
+  // EFECTO: Imprimir JWT en la Consola al ingresar al Formulario de Agregar Producto
+  useEffect(() => {
+    if (token) {
+      console.log('📜 [FORMULARIO AGREGAR PRODUCTO] Bearer Token JWT:', token);
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Manejo de la carga de archivos de imagen locales
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result;
-        setFormData(prev => ({ ...prev, image: result }));
-        setImagePreview(result);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_SIZE = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Compresión JPEG con calidad 0.8 (~60-150KB) para optimizar MySQL y localStorage
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+          setFormData(prev => ({ ...prev, image: compressedBase64 }));
+          setImagePreview(compressedBase64);
+        };
+        img.src = event.target.result;
       };
       reader.readAsDataURL(file);
     }
@@ -60,13 +96,58 @@ export const AddProductForm = () => {
     setImagePreview(url);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.brand || !formData.price) {
       alert('Por favor completa los campos requeridos: Nombre, Marca y Precio.');
       return;
     }
-    addPerfume(formData);
+
+    setSubmitting(true);
+    let savedPerfume = null;
+
+    // 1. Guardar en el backend MySQL enviando el Bearer Token JWT
+    try {
+      if (token) {
+        let response = null;
+        try {
+          response = await fetch('http://localhost:3001/api/perfumes', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+          });
+        } catch (eDirect) {
+          response = await fetch('/api/perfumes', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+          });
+        }
+
+        if (response && response.ok) {
+          const json = await response.json();
+          if (json.data) {
+            savedPerfume = json.data;
+          }
+        } else if (response) {
+          const errJson = await response.json().catch(() => ({}));
+          console.error('⚠️ Error al registrar en MySQL:', response.status, errJson);
+          alert(`Atención: El backend respondió con error ${response.status}: ${errJson.error || errJson.details || 'Error desconocido'}`);
+        }
+      }
+    } catch (err) {
+      console.warn('Error al conectar con backend MySQL:', err);
+    }
+
+    // 2. Guardar en el estado local de React y redirigir al Dashboard
+    addPerfume(savedPerfume || formData);
+    setSubmitting(false);
   };
 
   return (
@@ -95,12 +176,12 @@ export const AddProductForm = () => {
             <span>Agregar Nuevo Perfume</span>
           </h2>
           <p className="text-sm text-[#5C423E] mt-1">
-            Completa la información del perfume. Al guardar se reflejará de inmediato en el catálogo de Fragrance Corner.
+            Completa la información del perfume. Se guardará en la base de datos MySQL mediante autenticación Bearer Token JWT.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Informacion básica */}
+          {/* Información básica */}
           <div className="space-y-5">
             <h3 className="text-sm font-bold text-[#85544D] uppercase tracking-wider flex items-center gap-2">
               <Tag className="w-4 h-4 text-[#85544D]" />
@@ -224,14 +305,11 @@ export const AddProductForm = () => {
               <span>Imagen del Perfume</span>
             </h3>
 
-            {/* Componente para Subir Archivo Local */}
             <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-[#FAF7F4] border border-[#E8DFD8]">
-              {/* Preview Box */}
               <div className="w-28 h-28 rounded-xl overflow-hidden bg-white border border-[#E8DFD8] shrink-0 relative shadow-xs">
                 <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
               </div>
 
-              {/* Controls */}
               <div className="space-y-3 w-full">
                 <label className="block text-xs font-semibold text-[#85544D]">
                   Subir imagen desde tu equipo:
@@ -250,7 +328,6 @@ export const AddProductForm = () => {
               </div>
             </div>
 
-            {/* Presets Gallery Alternative */}
             <div>
               <p className="text-xs font-semibold text-[#85544D] mb-2.5">O elige una imagen de muestra:</p>
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -286,10 +363,11 @@ export const AddProductForm = () => {
 
             <button
               type="submit"
-              className="bg-[#85544D] hover:bg-[#6E423C] text-white font-bold px-6 py-2.5 rounded-xl shadow-md shadow-[#85544D]/20 transition-all text-sm flex items-center gap-2 cursor-pointer"
+              disabled={submitting}
+              className="bg-[#85544D] hover:bg-[#6E423C] text-white font-bold px-6 py-2.5 rounded-xl shadow-md shadow-[#85544D]/20 transition-all text-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <PlusCircle className="w-4 h-4 text-[#F1C7A7]" />
-              <span>Guardar Perfume</span>
+              <span>{submitting ? 'Guardando en MySQL...' : 'Guardar Perfume'}</span>
             </button>
           </div>
         </form>
