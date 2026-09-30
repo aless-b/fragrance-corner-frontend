@@ -1,96 +1,97 @@
-# Fragrance Corner — Frontend React + Vite + Tailwind CSS
+# Fragrance Corner — React + Vite + Tailwind CSS Frontend
 
-Aplicación web frontend para el catálogo de perfumería fina **Fragrance Corner**. Ofrece una interfaz elegante en paleta de colores claros tradicionales (`#FAF7F4`, `#85544D`, `#F2DDCC`, `#F1C7A7`), autenticación OAuth2 / LDAP contra Keycloak mediante Zustand, visualización del Bearer Token JWT por pantalla en consola, formulario para agregar perfumes con optimización automática de imágenes y conexión con backend Node.js / MySQL.
+A modern web frontend application for the **Fragrance Corner** fine perfumery catalog. Features an elegant UI designed with a classic light color palette (`#FAF7F4`, `#85544D`, `#F2DDCC`, `#F1C7A7`), OAuth2 / LDAP authentication via Keycloak using Zustand, clean browser console JWT Bearer Token inspection upon screen navigation, automated image upload optimization, and full integration with a Node.js / MySQL backend.
 
 ---
 
-## 🚀 Tecnologías Utilizadas
+## 🚀 Technologies Used
 
 - **Framework**: React 19 + Vite
-- **Estilos**: Tailwind CSS v4 (Paleta personalizada: Crema, Terracota, Durazno)
-- **Gestión de Estado**: Zustand (`useAuthStore`)
-- **Autenticación**: OAuth2 / OpenID Connect (Keycloak LDAP Realm `cybersecurity`)
-- **Iconografía**: Lucide React
-- **Contenedores**: Docker + Docker Compose
+- **Styling**: Tailwind CSS v4 (Custom Palette: Cream, Terracotta, Peach)
+- **State Management**: Zustand (`useAuthStore`)
+- **Authentication**: OAuth2 / OpenID Connect (Keycloak LDAP Realm `cybersecurity`)
+- **Icons**: Lucide React
+- **Containerization**: Docker + Docker Compose
 
 ---
 
-## ✨ Características Principales
+## ✨ Key Features
 
-1. **Autenticación LDAP / Keycloak obligatoria**:
-   - Al ingresar a `http://localhost:5173`, el usuario es redirigido al formulario de Login.
-   - Autenticación contra Keycloak en `http://localhost:8081` usando el Realm `cybersecurity` (ej. usuario `alice` / contraseña `alice123`).
+1. **Mandatory LDAP / Keycloak Authentication**:
+   - Accessing `http://localhost:5173` immediately directs unauthenticated users to the Login view.
+   - Authenticates against Keycloak running at `http://localhost:8081` using the `cybersecurity` realm (e.g., user `alice` / password `alice123`).
 
-2. **Inspección de JWT por Pantalla**:
-   - Imprime en la consola del navegador (`F12`) el Bearer Token JWT de manera limpia únicamente al navegar a cada sección (Login, Dashboard, Formulario de Alta).
+2. **Per-Screen JWT Inspection**:
+   - Outputs a clean, single-line raw Bearer Token JWT log to the browser developer console (`F12`) whenever navigating between screens (Login, Dashboard, Add Product Form).
 
-3. **Dashboard e Inventario de Perfumes**:
-   - Catálogo interactivo con filtros por marca, familia olfativa (categoría) y búsqueda por texto.
-   - Sincronización automática con la API RESTful de MySQL (`http://localhost:3001/api/perfumes`).
+3. **Perfume Catalog & Dashboard**:
+   - Interactive catalog grid with search filtering by name, brand, or olfactory category.
+   - Real-time synchronization with the MySQL REST API (`http://localhost:3001/api/perfumes`).
 
-4. **Formulario de Alta con Compresión Dinámica de Imágenes**:
-   - Permite elegir imágenes predeterminadas o subir un archivo propio desde la computadora.
-   - Procesa y redimensiona las imágenes locales mediante `<canvas>` (JPEG 800px max, calidad 0.8, ~60–150 KB) para optimizar el envío por la red, almacenamiento en MySQL `LONGTEXT` y `localStorage`.
+4. **Add Product Form with Dynamic Canvas Compression**:
+   - Upload custom local image files or select from curated presets.
+   - Automatically resizes uploaded files via HTML `<canvas>` to max 800px JPEG (quality 0.8, ~60–150 KB) for optimal payload sizes across MySQL `LONGTEXT` and browser `localStorage`.
 
-5. **Empaquetado en Docker**:
-   - Servido a través de Docker en el puerto `5173`.
-
----
-
-## 🛠️ Requisitos Previos
-
-- **Docker y Docker Compose** (Recomendado)
-- O en su defecto **Node.js v20+** y **npm**
+5. **Docker Integration**:
+   - Fully containerized and served via Docker on port `5173`.
 
 ---
 
-## 📦 Ejecución con Docker Compose (Recomendado)
+## 🛠️ Prerequisites
 
-Desde la carpeta raíz del frontend (`perfume-dashboard`):
+- **Docker & Docker Compose** (Recommended)
+- Or **Node.js v20+** and **npm**
+
+---
+
+## 📦 Running with Docker Compose (Recommended)
+
+From the root directory of the frontend project (`perfume-dashboard`):
 
 ```bash
-# Construir y levantar el contenedor en segundo plano
+# Build and start the container in background mode
 docker-compose up -d --build
 ```
 
-La aplicación estará disponible en: **`http://localhost:5173`**
+The application will be accessible at: **`http://localhost:5173`**
 
 ---
 
-## 💻 Ejecución Local sin Docker
+## 💻 Running Locally without Docker
 
 ```bash
-# Instalar dependencias
+# Install dependencies
 npm install
 
-# Iniciar servidor de desarrollo Vite
+# Start Vite development server
 npm run dev
 ```
 
 ---
 
-## 📁 Estructura del Proyecto
+## 📁 Project Structure
 
 ```text
 perfume-dashboard/
 ├── src/
 │   ├── components/
-│   │   ├── AddProductForm.jsx   # Formulario de alta de perfumes con compresión canvas
-│   │   ├── DashboardOverview.jsx# Dashboard principal y listado de productos
-│   │   ├── Login.jsx            # Pantalla de inicio de sesión LDAP / Keycloak
-│   │   ├── Navbar.jsx           # Barra de navegación superior
-│   │   └── ProductCard.jsx      # Tarjeta individual de fragancia
+│   │   ├── AddProductForm.jsx   # Product creation form with canvas compression
+│   │   ├── DashboardOverview.jsx# Main dashboard overview and product catalog
+│   │   ├── Login.jsx            # LDAP / Keycloak login component
+│   │   ├── Navbar.jsx           # Top header navigation bar
+│   │   └── ProductCard.jsx      # Individual fragrance card component
 │   ├── context/
-│   │   └── PerfumeContext.jsx   # Estado global del catálogo y tostadas de notificación
+│   │   └── PerfumeContext.jsx   # Global perfume catalog context & toast notifications
 │   ├── data/
-│   │   └── initialPerfumes.js   # Catálogo semilla inicial de respaldo
+│   │   └── initialPerfumes.js   # Fallback initial seed catalog
 │   ├── store/
-│   │   └── useAuthStore.js      # Store Zustand para sesión, JWT y comunicación Keycloak
-│   ├── App.jsx                  # Componente principal con enrutamiento por pestañas
-│   ├── index.css                # Estilos globales y paleta de colores Tailwind
-│   └── main.jsx                 # Punto de entrada de React
-├── Dockerfile                   # Configuración de imagen Docker (Node 20 Alpine)
-├── docker-compose.yml           # Orquestación de contenedor en puerto 5173
-├── vite.config.js               # Proxy para Keycloak (:8081) y Backend API (:3001)
+│   │   └── useAuthStore.js      # Zustand store for LDAP session, JWT, and Keycloak API
+│   ├── App.jsx                  # Main root component & tab navigation
+│   ├── index.css                # Global styles and Tailwind custom colors
+│   └── main.jsx                 # React DOM entry point
+├── Dockerfile                   # Docker image specification (Node 20 Alpine)
+├── docker-compose.yml           # Docker Compose setup exposing port 5173
+├── index.html                   # Vite root HTML entry point
+├── vite.config.js               # Proxy configuration for Keycloak (:8081) and Backend API (:3001)
 └── package.json
 ```
