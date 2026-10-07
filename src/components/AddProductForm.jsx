@@ -39,12 +39,6 @@ export const AddProductForm = () => {
   const [imagePreview, setImagePreview] = useState(PRESET_IMAGES[0].url);
   const [submitting, setSubmitting] = useState(false);
 
-  // EFECTO: Imprimir JWT en la Consola al ingresar al Formulario de Agregar Producto
-  useEffect(() => {
-    if (token) {
-      console.log('📜 [FORMULARIO AGREGAR PRODUCTO] Bearer Token JWT:', token);
-    }
-  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

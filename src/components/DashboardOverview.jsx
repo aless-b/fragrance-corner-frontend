@@ -28,11 +28,8 @@ export const DashboardOverview = () => {
     setApiPerfumes(perfumes);
   }, [perfumes]);
 
-  // EFECTO: Imprimir JWT en la Consola al ingresar al Dashboard
+  // Consultar Backend MySQL al ingresar al Dashboard
   useEffect(() => {
-    if (token) {
-      console.log('📜 [DASHBOARD] Bearer Token JWT:', token);
-    }
     fetchPerfumesFromBackend();
   }, []);
 

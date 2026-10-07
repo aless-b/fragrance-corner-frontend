@@ -3,11 +3,10 @@ import { jwtDecode } from 'jwt-decode';
 
 const TOKEN_KEY = 'fragrance_corner_jwt_token';
 
-// Función para decodificar y loguear JWT en consola
-const parseAndLogJwt = (token, context = 'Login Exitoso') => {
+// Función para decodificar JWT
+const parseAndLogJwt = (token) => {
   try {
     const decoded = jwtDecode(token);
-    console.log(`🔑 [JWT STORE] Token JWT (${context}):`, token);
     return decoded;
   } catch (e) {
     console.error('Error al decodificar JWT:', e);
