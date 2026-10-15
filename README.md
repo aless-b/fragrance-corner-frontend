@@ -88,3 +88,19 @@ perfume-dashboard/
 ├── vite.config.js               # Proxy configuration for Keycloak (:8081) and Backend API (:3001)
 └── package.json
 ```
+
+---
+
+## 🔍 Vulnerability & Security Assessment (Nuclei Scan)
+
+Automated dynamic application security testing (DAST) was conducted against the running container using [Nuclei](https://github.com/projectdiscovery/nuclei) with official HTTP vulnerability templates.
+
+| Finding | Severity | Classification | Impact / Description |
+| :--- | :---: | :---: | :--- |
+| **Project Metadata Exposure (`package.json`, `package-lock.json`, `README.md`)** | **Low** | CWE-200 | The web server allows direct public downloads of `package.json` and `package-lock.json`. An attacker can enumerate the exact inventory of third-party libraries, dependencies, and React/Node versions to target known CVEs. |
+| **Missing HTTP Security Headers (10 Headers)** | **Info / Misconfiguration** | CWE-693 | Missing defense-in-depth security hardening headers:<br>• `Content-Security-Policy` (CSP) — Mitigates Cross-Site Scripting (XSS).<br>• `X-Frame-Options` — Protects against Clickjacking.<br>• `X-Content-Type-Options: nosniff` — Prevents MIME-type sniffing.<br>• `Strict-Transport-Security` (HSTS) — Enforces HTTPS.<br>• `Referrer-Policy`, `Permissions-Policy`, `CORP`, `COOP`, `COEP`, `Cross-Domain Policies`. |
+| **Server Version Disclosure (`nginx-version`)** | **Info** | CWE-200 | The HTTP response header exposes the exact web server version: `Server: nginx/1.28.3`. |
+| **WAF / Traffic Filter Detection (`waf-detect`, `waf-fuzz`)** | **Info** | CWE-200 | Nginx actively intercepted and blocked simulated SQL injection and XSS fuzzing payloads with HTTP `403 Forbidden`. |
+
+> Detailed scan logs are archived under [`reports/nuclei-frontend-results.txt`](reports/nuclei-frontend-results.txt) and [`reports/nuclei-frontend-results.jsonl`](reports/nuclei-frontend-results.jsonl).
+
