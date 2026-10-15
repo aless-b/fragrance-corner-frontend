@@ -86,6 +86,9 @@ perfume-dashboard/
 ├── nginx.conf                   # Nginx reverse proxy & access log configuration
 ├── index.html                   # Vite root HTML entry point
 ├── vite.config.js               # Proxy configuration for Keycloak (:8081) and Backend API (:3001)
+├── reports/                     # DAST security assessment reports (Nuclei)
+│   ├── nuclei-frontend-results.jsonl
+│   └── nuclei-frontend-results.txt
 └── package.json
 ```
 
