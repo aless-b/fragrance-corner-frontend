@@ -1,13 +1,17 @@
-[waf-fuzz:nginxgeneric] [http] [info] http://host.docker.internal:5173 [whatwaf-payloads="\\' AND 1=1 \\' OR 10=11,<script>alert(\\'\\');</script>"]
+[waf-fuzz:nginxgeneric] [http] [info] http://host.docker.internal:5173 [whatwaf-payloads="\\' AND 1=1 OR 24=25 \\'"]
 [waf-detect:nginxgeneric] [http] [info] http://host.docker.internal:5173
+[readme-md] [http] [info] http://host.docker.internal:5173/README.md
+[tech-detect:nginx] [http] [info] http://host.docker.internal:5173
+[nginx-version] [http] [info] http://host.docker.internal:5173 ["nginx/1.28.3"]
+[package-json] [http] [low] http://host.docker.internal:5173/package.json
+[package-json] [http] [low] http://host.docker.internal:5173/package-lock.json
+[http-missing-security-headers:strict-transport-security] [http] [info] http://host.docker.internal:5173
+[http-missing-security-headers:x-content-type-options] [http] [info] http://host.docker.internal:5173
+[http-missing-security-headers:x-permitted-cross-domain-policies] [http] [info] http://host.docker.internal:5173
 [http-missing-security-headers:referrer-policy] [http] [info] http://host.docker.internal:5173
 [http-missing-security-headers:cross-origin-resource-policy] [http] [info] http://host.docker.internal:5173
-[http-missing-security-headers:x-frame-options] [http] [info] http://host.docker.internal:5173
-[http-missing-security-headers:x-permitted-cross-domain-policies] [http] [info] http://host.docker.internal:5173
-[http-missing-security-headers:cross-origin-embedder-policy] [http] [info] http://host.docker.internal:5173
-[http-missing-security-headers:cross-origin-opener-policy] [http] [info] http://host.docker.internal:5173
-[http-missing-security-headers:strict-transport-security] [http] [info] http://host.docker.internal:5173
 [http-missing-security-headers:content-security-policy] [http] [info] http://host.docker.internal:5173
 [http-missing-security-headers:permissions-policy] [http] [info] http://host.docker.internal:5173
-[http-missing-security-headers:x-content-type-options] [http] [info] http://host.docker.internal:5173
-[tech-detect:nginx] [http] [info] http://host.docker.internal:5173
+[http-missing-security-headers:x-frame-options] [http] [info] http://host.docker.internal:5173
+[http-missing-security-headers:cross-origin-embedder-policy] [http] [info] http://host.docker.internal:5173
+[http-missing-security-headers:cross-origin-opener-policy] [http] [info] http://host.docker.internal:5173
